@@ -1,0 +1,47 @@
+# Hamieh Tunnel — SNI Bypass Example (mirrors original repo functionality)
+# Replicates the Teams SNI spoof technique with the full Nexus stack.
+
+mode: client
+
+transport:
+  type: wss
+  relay_host: "YOUR_VPS_IP"
+  relay_port: 8443
+  path: /tunnel
+  sni: "teams.microsoft.com"     # <── The DPI-tricking SNI
+  verify_relay_cert: false
+  pool:
+    min_connections: 3
+    max_connections: 30
+
+socks5:
+  bind_host: "127.0.0.1"
+  bind_port: 1080
+  enable_udp: true
+
+routing:
+  default_action: tunnel
+  rules:
+    - match: private
+      action: direct
+      priority: 1
+
+auth:
+  token: "REPLACE_WITH_YOUR_TOKEN"
+
+obfuscation:
+  enabled: true          # Add padding to make traffic fingerprinting harder
+  padding_min: 32
+  padding_max: 512
+  timing_jitter_ms: 30
+
+rotation:
+  enabled: true
+  interval_seconds: 300  # Rotate tunnel every 5 minutes
+
+log:
+  level: INFO
+
+metrics:
+  enabled: true
+  bind_port: 9100

@@ -1,0 +1,61 @@
+# --- OS / IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+.qodo/
+
+# --- Flutter / Dart ---
+**/flutter_app/.dart_tool/
+**/flutter_app/build/
+**/flutter_app/.flutter-plugins
+**/flutter_app/.flutter-plugins-dependencies
+
+# --- Android ---
+**/android/.gradle/
+**/android/local.properties
+**/android/**/build/
+**/android/captures/
+**/android/*.iml
+**/android/.cxx/
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# --- Go ---
+*.test
+*.out
+
+# Python extension modules / local Go builds (keep Android jniLibs tracked)
+*.so
+!hamieh-tunnel/flutter_app/android/app/src/main/jniLibs/**/*.so
+
+# --- Native build artifacts (rebuild with NDK) ---
+# Uncomment if you prefer not to ship prebuilt .so in repo:
+# **/jniLibs/**/*.so
+
+# --- Logs / misc ---
+*.log
+*.tmp
+.cursor/

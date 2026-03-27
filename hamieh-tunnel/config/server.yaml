@@ -1,0 +1,47 @@
+# Hamieh Tunnel — Relay Server Configuration
+# Deploy this on your VPS/relay machine.
+# Run: hamieh server --config config/server.yaml
+
+mode: server
+
+# ── Relay listener ────────────────────────────────────────────────────────────
+relay:
+  host: "0.0.0.0"
+  port: 8443         # WSS port (HTTPS CONNECT on 8444 automatically)
+  max_clients: 500
+  buffer_size: 65536
+  connect_timeout: 15.0
+
+# ── TLS ───────────────────────────────────────────────────────────────────────
+tls:
+  cert_file: "certs/relay_cert.pem"
+  key_file: "certs/relay_key.pem"
+  ca_file: ""            # Set for mTLS client verification
+  verify_client: false   # Set true to enable mTLS
+
+# ── Authentication ────────────────────────────────────────────────────────────
+auth:
+  # MUST match the token in client config.
+  # Generate with: hamieh keygen
+  token: "CHANGE_ME_USE_HAMIEH_KEYGEN"
+  token_ttl_seconds: 3600
+
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+rate_limit:
+  enabled: true
+  requests_per_minute: 600    # per client IP
+  bytes_per_second: 10485760  # 10 MB/s per client
+  ban_threshold: 10           # bans after N auth failures
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+log:
+  level: INFO
+  file: "relay.log"
+  json_format: false
+  access_log: true
+
+# ── Metrics ───────────────────────────────────────────────────────────────────
+metrics:
+  enabled: true
+  bind_host: "127.0.0.1"   # Only expose to localhost; use nginx to proxy externally
+  bind_port: 9100

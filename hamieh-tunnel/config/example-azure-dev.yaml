@@ -1,0 +1,32 @@
+# Hamieh Tunnel — Azure Dev Tunnel Example
+# No VPS required. Uses Microsoft's free Dev Tunnel infrastructure.
+# Requires: az login
+
+mode: client
+
+transport:
+  type: azure_dev
+  relay_host: ""            # auto-discovered from devtunnel output
+  relay_port: 443
+  # azure_tunnel_url is populated automatically on first run,
+  # or set manually to skip tunnel creation:
+  azure_tunnel_url: ""
+  sni: ""                   # not used for azure_dev (uses real *.devtunnels.ms cert)
+  verify_relay_cert: true   # valid Microsoft cert — verify it!
+
+socks5:
+  bind_host: "127.0.0.1"
+  bind_port: 1080
+
+routing:
+  default_action: tunnel
+  rules:
+    - match: private
+      action: direct
+      priority: 1
+
+auth:
+  token: "REPLACE_WITH_YOUR_TOKEN"
+
+log:
+  level: INFO

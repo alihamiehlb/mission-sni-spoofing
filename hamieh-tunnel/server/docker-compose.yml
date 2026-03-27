@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  hashsec-relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hashsec-relay
+    restart: unless-stopped
+    ports:
+      - "8443:8443"
+      - "8444:8444"
+      - "8445:8445"
+      - "127.0.0.1:9100:9100"
+    volumes:
+      - certs:/data/certs
+    environment:
+      - HAMIEH_AUTH_TOKEN=${HAMIEH_AUTH_TOKEN:-changeme}
+    command: >
+      --port 8443
+      --token ${HAMIEH_AUTH_TOKEN:-changeme}
+      --cert /data/certs/relay_cert.pem
+      --key /data/certs/relay_key.pem
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+volumes:
+  certs:

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamieh Tunnel — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d2e;
+    --elevated: #252840;
+    --border: rgba(255,255,255,0.06);
+    --primary: #00d4ff;
+    --secondary: #7c3aed;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #e2e8f0;
+    --muted: rgba(255,255,255,0.38);
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .logo h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo span { font-size: 13px; color: var(--muted); }
+
+  /* Status pill */
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--card);
+    transition: all 0.3s;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    transition: all 0.3s;
+  }
+  .status-pill.connected { border-color: rgba(16,185,129,0.3); }
+  .status-pill.connected .status-dot {
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(16,185,129,0.6);
+  }
+  .status-pill.disconnected .status-dot { background: var(--muted); }
+
+  /* ── Control buttons ── */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  button {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  .btn-start { background: var(--primary); color: #000; }
+  .btn-stop  { background: var(--danger);  color: #fff; }
+  .btn-refresh { background: var(--elevated); color: var(--text); border: 1px solid var(--border); }
+
+  /* ── Grid layout ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  /* ── Stat card ── */
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: border-color 0.3s;
+  }
+  .stat-card:hover { border-color: rgba(255,255,255,0.15); }
+  .stat-icon {
+    font-size: 20px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+
+  /* ── Charts row ── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 768px) {
+    .charts-row { grid-template-columns: 1fr; }
+  }
+
+  /* ── Panel ── */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--elevated);
+    color: var(--muted);
+  }
+
+  /* ── Info table ── */
+  .info-table { width: 100%; border-collapse: collapse; }
+  .info-table tr { border-bottom: 1px solid var(--border); }
+  .info-table tr:last-child { border-bottom: none; }
+  .info-table td { padding: 10px 0; font-size: 13px; }
+  .info-table td:first-child { color: var(--muted); width: 40%; }
+  .info-table td:last-child { color: var(--text); font-weight: 500; text-align: right; }
+
+  /* ── Log stream ── */
+  .log-container {
+    height: 240px;
+    overflow-y: auto;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    background: var(--elevated);
+    border-radius: 10px;
+    padding: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .log-entry {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0;
+    line-height: 1.5;
+  }
+  .log-time { color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .log-level {
+    width: 48px;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+  }
+  .log-msg { color: rgba(255,255,255,0.7); word-break: break-all; }
+  .lvl-INFO    { background: rgba(0,212,255,0.1);  color: #00d4ff; }
+  .lvl-WARNING { background: rgba(245,158,11,0.15); color: #f59e0b; }
+  .lvl-ERROR   { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .lvl-DEBUG   { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); }
+
+  /* ── Tunnel info ── */
+  .tunnel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .transport-wss  { background: rgba(0,212,255,0.1);  color: var(--primary); }
+  .transport-https { background: rgba(124,58,237,0.1); color: var(--secondary); }
+
+  /* ── Pulse animation for connected state ── */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .pulsing { animation: pulse 2s infinite; }
+
+  /* ── SNI highlight ── */
+  .sni-value {
+    font-family: monospace;
+    color: var(--warning);
+    background: rgba(245,158,11,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡</div>
+    <div>
+      <h1>Hamieh Tunnel</h1>
+      <span id="version-line">Dashboard v1.0</span>
+    </div>
+  </div>
+  <div class="status-pill disconnected" id="status-pill">
+    <div class="status-dot"></div>
+    <span id="status-text">Connecting...</span>
+  </div>
+</header>
+
+<div class="controls">
+  <button class="btn-start" onclick="tunnelAction('start')">▶ Connect</button>
+  <button class="btn-stop"  onclick="tunnelAction('stop')">■ Disconnect</button>
+  <button class="btn-refresh" onclick="refreshNow()">↻ Refresh</button>
+</div>
+
+<!-- ── Stats grid ── -->
+<div class="grid">
+  <div class="stat-card" id="card-status">
+    <span class="stat-icon">🔒</span>
+    <div class="stat-value" id="stat-status">—</div>
+    <div class="stat-label">Status</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon">⬇</span>
+    <div class="stat-value" id="stat-recv">0 MB</div>
+    <div class="stat-label">Downloaded</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon">⬆</span>
+    <div class="stat-value" id="stat-sent">0 MB</div>
+    <div class="stat-label">Uploaded</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon">⚡</span>
+    <div class="stat-value" id="stat-conns">0</div>
+    <div class="stat-label">Active Connections</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon">🕐</span>
+    <div class="stat-value" id="stat-uptime">—</div>
+    <div class="stat-label">Uptime</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon">🔄</span>
+    <div class="stat-value" id="stat-rotations">0</div>
+    <div class="stat-label">Tunnel Rotations</div>
+  </div>
+</div>
+
+<!-- ── Charts + Info ── -->
+<div class="charts-row">
+  <!-- Bandwidth chart -->
+  <div class="panel">
+    <div class="panel-title">
+      Bandwidth
+      <span class="panel-badge" id="bw-current">0 KB/s</span>
+    </div>
+    <canvas id="bwChart" height="120"></canvas>
+  </div>
+
+  <!-- Tunnel info -->
+  <div class="panel">
+    <div class="panel-title">Connection Info</div>
+    <table class="info-table">
+      <tr><td>Transport</td><td id="info-transport">—</td></tr>
+      <tr><td>Relay</td><td id="info-relay">—</td></tr>
+      <tr><td>SNI</td><td id="info-sni">—</td></tr>
+      <tr><td>SOCKS5</td><td id="info-socks5">—</td></tr>
+      <tr><td>Total Connections</td><td id="info-total-conns">0</td></tr>
+      <tr><td>Tunnel Errors</td><td id="info-errors">0</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ── Live log stream ── -->
+<div class="panel">
+  <div class="panel-title">
+    Live Logs
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="panel-badge" id="log-count">0 entries</span>
+      <button class="btn-refresh" style="padding:4px 10px;font-size:11px" onclick="clearLogs()">Clear</button>
+    </div>
+  </div>
+  <div class="log-container" id="log-container"></div>
+</div>
+
+<script>
+// ── Configuration ──────────────────────────────────────────────────────────
+const BASE = 'http://127.0.0.1:8080';
+const WS_BASE = 'ws://127.0.0.1:8080';
+
+// ── Bandwidth chart setup ──────────────────────────────────────────────────
+const MAX_POINTS = 40;
+const bwLabels  = Array(MAX_POINTS).fill('');
+const sentData  = Array(MAX_POINTS).fill(0);
+const recvData  = Array(MAX_POINTS).fill(0);
+
+const bwCtx = document.getElementById('bwChart').getContext('2d');
+const bwChart = new Chart(bwCtx, {
+  type: 'line',
+  data: {
+    labels: bwLabels,
+    datasets: [
+      {
+        label: 'Download',
+        data: recvData,
+        borderColor: '#00d4ff',
+        backgroundColor: 'rgba(0,212,255,0.05)',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true,
+        tension: 0.4,
+      },
+      {
+        label: 'Upload',
+        data: sentData,
+        borderColor: '#7c3aed',
+        backgroundColor: 'rgba(124,58,237,0.05)',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true,
+        tension: 0.4,
+      },
+    ],
+  },
+  options: {
+    animation: false,
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    scales: {
+      x: { display: false },
+      y: {
+        min: 0,
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10 } },
+        title: { display: true, text: 'MB/s', color: 'rgba(255,255,255,0.25)', font: { size: 10 } },
+      },
+    },
+    plugins: {
+      legend: { labels: { color: 'rgba(255,255,255,0.5)', boxWidth: 12, font: { size: 11 } } },
+    },
+  },
+});
+
+// ── State ──────────────────────────────────────────────────────────────────
+let prevSentMb = 0, prevRecvMb = 0;
+let logCount = 0;
+let wsStatus = null, wsLogs = null;
+
+// ── WebSocket: status stream ───────────────────────────────────────────────
+function connectStatusWs() {
+  wsStatus = new WebSocket(`${WS_BASE}/ws/status`);
+  wsStatus.onmessage = (e) => {
+    try { updateStatus(JSON.parse(e.data)); } catch(_) {}
+  };
+  wsStatus.onclose = () => setTimeout(connectStatusWs, 3000);
+  wsStatus.onerror = () => wsStatus.close();
+}
+
+function connectLogsWs() {
+  wsLogs = new WebSocket(`${WS_BASE}/ws/logs`);
+  wsLogs.onmessage = (e) => {
+    try { appendLog(JSON.parse(e.data)); } catch(_) {}
+  };
+  wsLogs.onclose = () => setTimeout(connectLogsWs, 3000);
+  wsLogs.onerror = () => wsLogs.close();
+}
+
+// ── Update UI ──────────────────────────────────────────────────────────────
+function updateStatus(data) {
+  const running = data.running;
+  const m = data.metrics || {};
+  const bw = m.bandwidth || {};
+  const conn = m.connections || {};
+  const tun = m.tunnel || {};
+
+  // Status pill
+  const pill = document.getElementById('status-pill');
+  const statusText = document.getElementById('status-text');
+  pill.className = 'status-pill ' + (running ? 'connected' : 'disconnected');
+  statusText.textContent = running ? 'Protected' : 'Disconnected';
+
+  // Stat cards
+  setText('stat-status', running ? '● Active' : '○ Stopped');
+  document.getElementById('stat-status').style.color = running ? '#10b981' : '#ef4444';
+  setText('stat-recv', (bw.recv_mb || 0).toFixed(1) + ' MB');
+  setText('stat-sent', (bw.sent_mb || 0).toFixed(1) + ' MB');
+  setText('stat-conns', conn.active || 0);
+  setText('stat-uptime', formatUptime(data.uptime_seconds || 0));
+  setText('stat-rotations', tun.rotations || 0);
+
+  // Info panel
+  setText('info-transport', (data.transport || '—').toUpperCase());
+  setText('info-relay', data.relay || '—');
+  document.getElementById('info-sni').innerHTML =
+    data.sni && data.sni !== '—'
+      ? `<span class="sni-value">${data.sni}</span>`
+      : '—';
+  const socks5 = data.socks5 || {};
+  setText('info-socks5', socks5.host ? `${socks5.host}:${socks5.port}` : '—');
+  setText('info-total-conns', conn.total || 0);
+  setText('info-errors', tun.errors || 0);
+
+  // Bandwidth chart
+  const sentMb = bw.sent_mb || 0;
+  const recvMb = bw.recv_mb || 0;
+  const sentMbps = Math.max(0, sentMb - prevSentMb);
+  const recvMbps = Math.max(0, recvMb - prevRecvMb);
+  prevSentMb = sentMb;
+  prevRecvMb = recvMb;
+
+  sentData.push(sentMbps); sentData.shift();
+  recvData.push(recvMbps); recvData.shift();
+  bwChart.update('none');
+
+  const totalMbps = (sentMbps + recvMbps);
+  setText('bw-current', totalMbps > 0.01
+    ? `${(totalMbps * 1024).toFixed(0)} KB/s`
+    : '0 KB/s');
+}
+
+// ── Log stream ─────────────────────────────────────────────────────────────
+function appendLog(entry) {
+  logCount++;
+  const container = document.getElementById('log-container');
+  const el = document.createElement('div');
+  el.className = 'log-entry';
+
+  const ts = (entry.ts || '').replace('T', ' ').replace('Z', '');
+  const level = entry.level || 'INFO';
+  const msg = entry.msg || '';
+
+  el.innerHTML = `
+    <span class="log-time">${ts.slice(11, 19)}</span>
+    <span class="log-level lvl-${level}">${level.slice(0,4)}</span>
+    <span class="log-msg">${escHtml(msg)}</span>
+  `;
+  container.appendChild(el);
+
+  // Auto-scroll to bottom
+  if (container.scrollTop + container.clientHeight >= container.scrollHeight - 80) {
+    container.scrollTop = container.scrollHeight;
+  }
+
+  // Cap at 500 entries
+  while (container.children.length > 500) {
+    container.removeChild(container.firstChild);
+  }
+
+  document.getElementById('log-count').textContent = logCount + ' entries';
+}
+
+function clearLogs() {
+  document.getElementById('log-container').innerHTML = '';
+  logCount = 0;
+  document.getElementById('log-count').textContent = '0 entries';
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────
+async function tunnelAction(action) {
+  try {
+    const resp = await fetch(`${BASE}/api/tunnel/${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await resp.json();
+    if (data.error) {
+      console.warn('Action failed:', data.error);
+    }
+  } catch (e) {
+    console.error('API not reachable:', e);
+  }
+}
+
+async function refreshNow() {
+  try {
+    const resp = await fetch(`${BASE}/api/tunnel/status`);
+    updateStatus(await resp.json());
+  } catch (_) {}
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function formatUptime(s) {
+  s = Math.round(s);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'm ' + (s%60) + 's';
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  return h + 'h ' + m + 'm';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+connectStatusWs();
+connectLogsWs();
+refreshNow();
+</script>
+</body>
+</html>

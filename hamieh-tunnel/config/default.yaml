@@ -1,0 +1,119 @@
+# Hamieh Tunnel — Default Client Configuration
+# Run: hamieh start --config config/default.yaml
+#
+# Copy this file and edit for your environment.
+
+# Mode: "client" | "server" | "both"
+mode: client
+
+# ── Transport (how the client reaches the relay) ─────────────────────────────
+transport:
+  # "wss"       - WebSocket over TLS (primary, recommended)
+  # "https"     - HTTPS CONNECT fallback
+  # "auto"      - Try WSS first, fall back to HTTPS
+  # "azure_dev" - Azure Dev Tunnel (no VPS needed)
+  type: wss
+
+  relay_host: "YOUR_RELAY_IP_OR_HOSTNAME"
+  relay_port: 8443
+
+  # WebSocket path (must match relay server)
+  path: /tunnel
+
+  # SNI to use in TLS ClientHello — the carrier spoofing knob.
+  # Set to a whitelisted domain to trick carrier DPI.
+  # Examples: "teams.microsoft.com", "teams.live.com", "update.microsoft.com"
+  sni: "teams.microsoft.com"
+
+  # Accept self-signed relay certificate (set false if using a real cert)
+  verify_relay_cert: false
+
+  # Connection pool settings
+  pool:
+    min_connections: 2
+    max_connections: 20
+    connect_timeout: 10.0
+    idle_timeout: 120.0
+    max_retries: 3
+
+  # TLS settings
+  tls:
+    cert_file: ""
+    key_file: ""
+    ca_file: ""
+
+# ── SOCKS5 proxy ──────────────────────────────────────────────────────────────
+socks5:
+  bind_host: "127.0.0.1"
+  bind_port: 1080
+  enable_udp: true
+  # Optional SOCKS5 username/password auth (leave empty to disable)
+  auth_user: ""
+  auth_pass: ""
+
+# ── Smart routing ─────────────────────────────────────────────────────────────
+routing:
+  # What to do with traffic that doesn't match any rule
+  default_action: tunnel  # "tunnel" | "direct" | "block"
+
+  rules:
+    # Bypass tunnel for local/private traffic
+    - match: private
+      action: direct
+      priority: 1
+    - match: local
+      action: direct
+      priority: 2
+
+    # Example: route Microsoft traffic directly (if carrier already whitelists it)
+    # - match: "*.microsoft.com"
+    #   action: direct
+    #   priority: 10
+
+    # Example: block ads
+    # - match: "*.doubleclick.net"
+    #   action: block
+    #   priority: 20
+
+# ── TUN interface (full traffic capture, requires root) ───────────────────────
+tun:
+  enabled: false         # Set true to capture ALL traffic (not just proxy-aware apps)
+  name: nexus0
+  address: "10.88.0.1"
+  netmask: "255.255.255.0"
+  mtu: 1500
+  tun2socks_bin: tun2socks   # Must be in PATH or absolute path
+
+# ── Authentication ────────────────────────────────────────────────────────────
+auth:
+  # Shared secret token for relay authentication.
+  # Run `hamieh keygen` to generate one, then set the same value on the server.
+  token: ""            # Auto-generated if empty (only for testing)
+  token_ttl_seconds: 3600
+
+# ── Traffic obfuscation ───────────────────────────────────────────────────────
+obfuscation:
+  enabled: false       # Add padding + timing jitter to defeat fingerprinting
+  padding_min: 16
+  padding_max: 256
+  timing_jitter_ms: 20
+
+# ── Tunnel rotation ───────────────────────────────────────────────────────────
+rotation:
+  enabled: false
+  interval_seconds: 300    # Rotate every 5 minutes
+  max_bytes: 104857600     # or after 100 MB
+  relay_pool: []           # Additional relay addresses: ["host2:8443", "host3:8443"]
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+log:
+  level: INFO
+  file: ""           # Write to file if set: "hamieh.log"
+  json_format: false
+  access_log: true
+
+# ── Metrics ───────────────────────────────────────────────────────────────────
+metrics:
+  enabled: true
+  bind_host: "127.0.0.1"
+  bind_port: 9100    # Prometheus: http://127.0.0.1:9100/metrics

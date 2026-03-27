@@ -1,0 +1,28 @@
+name: hashsec_tunnel
+description: Hash-Sec Tunnel — Secure Azure VPN for 20GB Teams bundle
+publish_to: none
+version: 3.0.1+4
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  http: ^1.2.0
+  provider: ^6.1.2
+  shared_preferences: ^2.2.3
+  flutter_secure_storage: ^9.2.4
+  flutter_animate: ^4.5.0
+  gap: ^3.0.1
+  url_launcher: ^6.2.5
+  crypto: ^3.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
