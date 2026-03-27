@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/oauth_config.dart';
 
 class ApiService {
   static const _secureStorage = FlutterSecureStorage(
@@ -19,8 +20,8 @@ class ApiService {
   static const _usageKey = 'hashsec_daily_usage_mb';
   static const _usageDateKey = 'hashsec_usage_date';
 
-  static const _clientId = '04b07795-a71b-4346-935f-02f9a1efa29c';
-  static const _redirectUri = 'hamieh://auth';
+  static String get _clientId => kAzureOAuthClientId;
+  static String get _redirectUri => kAzureOAuthRedirectUri;
   static const _tokenUrl =
       'https://login.microsoftonline.com/common/oauth2/v2.0/token';
   static const _scope =

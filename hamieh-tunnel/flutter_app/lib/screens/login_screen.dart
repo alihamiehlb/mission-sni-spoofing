@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../config/oauth_config.dart';
 import '../main.dart';
 import '../theme/app_theme.dart';
 
@@ -22,8 +23,6 @@ class _LoginScreenState extends State<LoginScreen>
   late AnimationController _bgCtrl;
   int _lastOauthFailNonce = 0;
 
-  static const _clientId = '04b07795-a71b-4346-935f-02f9a1efa29c';
-  static const _redirectUri = 'hamieh://auth';
   static const _scope =
       'https://management.azure.com/.default offline_access openid profile';
   static const _tenant = 'common';
@@ -60,6 +59,16 @@ class _LoginScreenState extends State<LoginScreen>
       _error = null;
     });
 
+    if (!isAzureOAuthClientConfigured) {
+      setState(() {
+        _error =
+            'Azure Client ID is not set. Add it in lib/config/oauth_config.dart '
+            'or build with --dart-define=AZURE_CLIENT_ID=... (see project README).';
+        _loading = false;
+      });
+      return;
+    }
+
     try {
       final codeVerifier = _generateCodeVerifier();
       final codeChallenge = _generateCodeChallenge(codeVerifier);
@@ -75,9 +84,9 @@ class _LoginScreenState extends State<LoginScreen>
 
       final authUrl = Uri.parse(
         'https://login.microsoftonline.com/$_tenant/oauth2/v2.0/authorize'
-        '?client_id=$_clientId'
+        '?client_id=${Uri.encodeComponent(kAzureOAuthClientId)}'
         '&response_type=code'
-        '&redirect_uri=${Uri.encodeComponent(_redirectUri)}'
+        '&redirect_uri=${Uri.encodeComponent(kAzureOAuthRedirectUri)}'
         '&scope=${Uri.encodeComponent(_scope)}'
         '&state=$state'
         '&code_challenge=$codeChallenge'
